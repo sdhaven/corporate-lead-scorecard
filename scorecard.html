@@ -1,0 +1,637 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Corporate Lead Agents — Sales Scorecard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;600;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#151c22; --paper:#f6f4ef; --panel:#ffffff; --line:#dcd6c9; --muted:#6b6459;
+    --brass:#9c7a3c; --brass-deep:#7a5f2c; --plum:#5b4a72; --plum-deep:#453759;
+    --good:#3d6b4f; --warn:#a8562e; --focus:#1c4b52;
+    --entry-bg:#fffdf8; --pres-bg:#f6f2fa; --calc-bg:#eef1ea;
+    --total-bg:#151c22; --total-ink:#f6f4ef;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:'Inter',system-ui,-apple-system,Segoe UI,sans-serif;-webkit-font-smoothing:antialiased;}
+  .wrap{max-width:1220px;margin:0 auto;padding:36px 28px 90px;}
+
+  header{display:flex;justify-content:space-between;align-items:flex-end;flex-wrap:wrap;gap:20px;padding-bottom:22px;border-bottom:2px solid var(--ink);margin-bottom:20px;}
+  .title-block h1{font-family:'Space Grotesk',sans-serif;font-size:clamp(24px,3vw,34px);font-weight:700;margin:0 0 4px;letter-spacing:-0.01em;}
+  .title-block p{margin:0;color:var(--muted);font-size:14.5px;}
+  .period-block{display:flex;flex-direction:column;align-items:flex-end;gap:6px;}
+  .period-block label{font-size:11.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);}
+  .period-nav{display:flex;align-items:center;gap:10px;}
+  .period-nav button{border:1px solid var(--line);background:var(--panel);color:var(--ink);width:26px;height:26px;border-radius:2px;cursor:pointer;font-size:14px;line-height:1;}
+  .period-nav button:hover{border-color:var(--ink);}
+  #periodDisplay{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:600;color:var(--ink);min-width:110px;text-align:center;}
+  #jumpToday{font-size:11px;color:var(--muted);background:none;border:none;cursor:pointer;text-decoration:underline;padding:0;}
+
+  .conn-bar{
+    display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;
+    padding:10px 14px;border:1px solid var(--line);background:var(--panel);margin-bottom:24px;font-size:13px;
+  }
+  .conn-bar.ok{border-color:#c3d6c8;background:#f2f7f3;}
+  .conn-bar.bad{border-color:#e4c3ae;background:#fbf1ea;}
+  .conn-left{display:flex;align-items:center;gap:8px;}
+  .conn-dot{width:8px;height:8px;border-radius:50%;background:#b7b1a3;flex:none;}
+  .conn-bar.ok .conn-dot{background:var(--good);}
+  .conn-bar.bad .conn-dot{background:var(--warn);}
+
+  h2.section-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:600;text-transform:uppercase;letter-spacing:.06em;margin:0 0 4px;display:flex;align-items:center;gap:10px;}
+  p.section-sub{margin:0 0 16px;color:var(--muted);font-size:13.5px;}
+
+  .published-banner{
+    background:#f6f2fa;border:1px solid #ddd0e8;color:var(--plum-deep);font-size:13px;
+    padding:9px 14px;margin-bottom:14px;border-radius:2px;
+  }
+
+  .stat-strip{display:grid;grid-template-columns:repeat(7,1fr);gap:1px;background:var(--line);border:1px solid var(--line);margin-bottom:26px;}
+  .stat{background:var(--panel);padding:14px 14px;}
+  .stat .num{font-family:'Space Grotesk',sans-serif;font-size:20px;font-weight:700;}
+  .stat .lbl{font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);margin-top:2px;}
+
+  .table-scroll{overflow-x:auto;border:1px solid var(--line);background:var(--panel);}
+  table{border-collapse:collapse;width:100%;min-width:1080px;}
+  thead th{position:sticky;top:0;z-index:2;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:9px 7px;text-align:center;border-bottom:2px solid var(--ink);background:var(--panel);}
+  thead tr.group th{font-family:'Space Grotesk',sans-serif;font-size:10.5px;letter-spacing:.08em;padding:8px 7px 6px;border-bottom:1px solid var(--line);}
+  th.grp-entry{background:var(--entry-bg);color:var(--brass-deep);}
+  th.grp-pres{background:var(--pres-bg);color:var(--plum-deep);}
+  th.grp-calc{background:var(--calc-bg);color:var(--focus);}
+  th.agent-col{text-align:left;min-width:88px;}
+
+  tbody td{border-bottom:1px solid var(--line);padding:0;text-align:center;}
+  tbody td.agent-name{text-align:left;padding:0 10px;font-weight:600;font-size:14px;background:var(--panel);white-space:nowrap;}
+  td.entry-cell{background:var(--entry-bg);}
+  td.pres-cell{background:var(--pres-bg);}
+  td.calc-cell{background:var(--calc-bg);}
+  td.static-val{padding:10px 5px;font-variant-numeric:tabular-nums;font-size:14.5px;}
+
+  input.cell{width:100%;border:none;background:transparent;text-align:center;padding:10px 5px;font-size:14.5px;font-variant-numeric:tabular-nums;color:var(--ink);}
+  input.cell:disabled{color:var(--muted);}
+  input.cell:focus{outline:2px solid var(--focus);outline-offset:-2px;background:#fff;}
+  input.cell::placeholder{color:#c9c2b3;}
+
+  .ratio{font-variant-numeric:tabular-nums;font-weight:600;font-size:14px;padding:10px 5px;}
+  .ratio.won{color:var(--good);}
+  .ratio.risk{color:var(--warn);}
+  .ratio.pres{color:var(--plum-deep);}
+  .ratio.empty{color:#b7b1a3;font-weight:400;}
+
+  tfoot td{background:var(--total-bg);color:var(--total-ink);font-weight:700;padding:12px 5px;text-align:center;font-variant-numeric:tabular-nums;font-size:14px;}
+  tfoot td.agent-name{text-align:left;padding:12px 10px;font-family:'Space Grotesk',sans-serif;letter-spacing:.02em;}
+
+  .footer-row{display:flex;justify-content:space-between;align-items:center;margin-top:16px;flex-wrap:wrap;gap:12px;}
+  .save-status{font-size:12.5px;color:var(--muted);display:flex;align-items:center;gap:6px;}
+  .save-status .dot{width:6px;height:6px;border-radius:50%;background:var(--good);}
+  .actions{display:flex;gap:10px;}
+  button.ghost{border:1px solid var(--line);background:var(--panel);color:var(--ink);font-size:13px;padding:8px 14px;cursor:pointer;border-radius:2px;}
+  button.ghost:hover{border-color:var(--ink);}
+  button.primary{border:1px solid var(--plum-deep);background:var(--plum-deep);color:#fff;font-size:13px;padding:8px 16px;cursor:pointer;border-radius:2px;font-weight:600;}
+  button.primary:hover{background:var(--plum);}
+  button:disabled{opacity:.5;cursor:not-allowed;}
+
+  .hint{font-size:12.5px;color:var(--muted);margin-top:10px;line-height:1.5;}
+
+  .ytd-wrap{margin-top:56px;}
+  .ytd-empty{border:1px dashed var(--line);padding:28px;text-align:center;color:var(--muted);font-size:14px;background:var(--panel);}
+  .ytd-meta{font-size:12.5px;color:var(--muted);margin-top:10px;}
+
+  .tabbar{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:14px;border-bottom:1px solid var(--line);padding-bottom:0;}
+  .tabbar button{
+    border:1px solid var(--line);border-bottom:none;background:var(--panel);color:var(--muted);
+    font-size:12.5px;padding:7px 13px;cursor:pointer;border-radius:3px 3px 0 0;font-family:'Inter',sans-serif;
+  }
+  .tabbar button.active{background:var(--ink);color:var(--total-ink);border-color:var(--ink);font-weight:600;}
+  .tabbar button:hover:not(.active){border-color:var(--ink);color:var(--ink);}
+
+  @media (max-width:720px){
+    .stat-strip{grid-template-columns:repeat(3,1fr);}
+    header{align-items:flex-start;}
+    .period-block{align-items:flex-start;}
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div class="title-block">
+      <h1>Corporate Lead Agents Scorecard</h1>
+    </div>
+    <div class="period-block">
+      <label>Week of</label>
+      <div class="period-nav">
+        <button id="prevPeriod" title="Previous period" aria-label="Previous period">◀</button>
+        <span id="periodDisplay">—</span>
+        <button id="nextPeriod" title="Next period" aria-label="Next period">▶</button>
+      </div>
+      <button id="jumpToday">Jump to current period</button>
+    </div>
+  </header>
+
+  <div class="conn-bar" id="connBar">
+    <div class="conn-left">
+      <span class="conn-dot" id="connDot"></span>
+      <span id="connText">Connecting…</span>
+    </div>
+  </div>
+
+  <h2 class="section-title">This period</h2>
+
+  <div class="published-banner" id="publishedBanner" style="display:none;">
+    This period is already published. Editing here won't change the Since June 1 totals unless you publish it again.
+  </div>
+
+  <div class="stat-strip" id="statStrip"></div>
+
+  <div class="table-scroll">
+    <table id="grid">
+      <thead>
+        <tr class="group">
+          <th></th>
+          <th class="grp-entry" colspan="6">Stage 1 — Joshua enters</th>
+          <th class="grp-pres" colspan="1">Stage 2 — Agents self-report</th>
+          <th class="grp-calc" colspan="4">Calculated</th>
+        </tr>
+        <tr>
+          <th class="agent-col">Agent</th>
+          <th class="grp-entry">New Leads</th>
+          <th class="grp-entry">Won</th>
+          <th class="grp-entry">Policies Sold</th>
+          <th class="grp-entry">Premium Sold</th>
+          <th class="grp-entry">X-Date</th>
+          <th class="grp-entry">Dead</th>
+          <th class="grp-pres">Presentations</th>
+          <th class="grp-calc">Leads : Won</th>
+          <th class="grp-calc">Leads : Presentations</th>
+          <th class="grp-calc">Leads : Dead</th>
+          <th class="grp-calc">Leads : X-Date</th>
+        </tr>
+      </thead>
+      <tbody id="gridBody"></tbody>
+      <tfoot><tr id="totalsRow"></tr></tfoot>
+    </table>
+  </div>
+
+  <div class="footer-row">
+    <div class="actions">
+      <button class="ghost" id="refreshBtn">Refresh</button>
+      <button class="ghost" id="printBtn">Print / PDF</button>
+      <button class="primary" id="publishBtn">Publish (Andrew only)</button>
+    </div>
+  </div>
+
+  <p class="hint">Numbers save to the shared sheet automatically when you leave a field (Enter or click away). This page doesn't auto-refresh while you're entering data — once everyone's numbers are in, hit Refresh to pull the latest before you publish.</p>
+
+  <div class="ytd-wrap">
+    <h2 class="section-title">Since June 1</h2>
+    <p class="section-sub" id="ytdSub">Browse the running total, or click into any published period to see that exact snapshot.</p>
+    <div class="tabbar" id="periodTabs"></div>
+    <div id="ytdContainer"></div>
+  </div>
+
+  <div class="save-status" style="justify-content:center;margin-top:40px;">
+    <span class="dot" id="saveDot"></span><span id="saveText">Not connected</span>
+  </div>
+
+</div>
+
+<script>
+const AGENTS = ["Aaron","Chase","Joe","Jordan","Levi","Mikey","Nick","Nolan","Tim"];
+const FIELDS = ["newLeads","won","policiesSold","premiumSold","xDate","dead","presentations"];
+const BACKEND_URL = "https://script.google.com/macros/s/AKfycbznRYVlBGaj312kwloyR_hN0Wp11nStJ0hJ_I5aA2W4BPpJGPMn0yzY-69whC1YfypIXw/exec";
+const NAV_KEY = "clScorecardPeriodOffset";
+
+const ANCHOR = new Date(2026, 8, 14); // Sep 14, 2026
+const CYCLE_MS = 14 * 24 * 60 * 60 * 1000;
+function offsetForDate(d){ return Math.floor((d - ANCHOR) / CYCLE_MS); }
+function fmtDate(d){ return (d.getMonth()+1) + '.' + d.getDate(); }
+function labelForOffset(offset){
+  const start = new Date(ANCHOR.getTime() + offset*CYCLE_MS);
+  const end = new Date(start.getTime() + CYCLE_MS);
+  return fmtDate(start) + '–' + fmtDate(end);
+}
+function todaysOffset(){ return offsetForDate(new Date()); }
+function pct(n,d){ if(!d) return null; return Math.round((n/d)*1000)/10; }
+function formatMoney(v){
+  const n = parseFloat(String(v).replace(/[^0-9.\-]/g,''));
+  if(isNaN(n)) return '';
+  return n.toLocaleString('en-US',{maximumFractionDigits:0});
+}
+
+let periodOffset = parseInt(localStorage.getItem(NAV_KEY), 10);
+if(isNaN(periodOffset)) periodOffset = todaysOffset();
+
+let currentAgents = {};   // live data for the open period, agent -> field -> value
+let currentPublished = false;
+let publishedPeriods = []; // fetched from server
+let activeTab = 'total';   // 'total' or an offset (as string)
+
+const flatOrder = [];
+const focusedKey = () => {
+  const el = document.activeElement;
+  if(el && el.classList && el.classList.contains('cell')) return el.dataset.agent + '|' + el.dataset.field;
+  return null;
+};
+
+// ---------- backend calls ----------
+async function apiGet(params){
+  if(!BACKEND_URL) throw new Error('not connected');
+  const url = BACKEND_URL + (BACKEND_URL.includes('?') ? '&' : '?') + params;
+  const res = await fetch(url);
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+async function apiPost(body){
+  if(!BACKEND_URL) throw new Error('not connected');
+  const res = await fetch(BACKEND_URL, {
+    method:'POST',
+    headers:{'Content-Type':'text/plain;charset=utf-8'}, // avoids CORS preflight against Apps Script
+    body: JSON.stringify(body)
+  });
+  if(!res.ok) throw new Error('HTTP ' + res.status);
+  return res.json();
+}
+
+function setConn(ok, text){
+  const bar = document.getElementById('connBar');
+  bar.className = 'conn-bar ' + (ok ? 'ok' : 'bad');
+  document.getElementById('connText').textContent = text;
+  document.getElementById('saveText').textContent = text;
+  document.getElementById('saveDot').style.background = ok ? 'var(--good)' : 'var(--warn)';
+  setInputsEnabled(ok);
+}
+function setInputsEnabled(enabled){
+  flatOrder.forEach(inp => inp.disabled = !enabled);
+  document.getElementById('publishBtn').disabled = !enabled;
+}
+
+// ---------- grid ----------
+function buildGrid(){
+  const body = document.getElementById('gridBody');
+  body.innerHTML = '';
+  flatOrder.length = 0;
+
+  AGENTS.forEach(agent=>{
+    const tr = document.createElement('tr');
+    const nameTd = document.createElement('td');
+    nameTd.className = 'agent-name';
+    nameTd.textContent = agent;
+    tr.appendChild(nameTd);
+
+    FIELDS.forEach(field=>{
+      const td = document.createElement('td');
+      td.className = field === 'presentations' ? 'pres-cell' : 'entry-cell';
+      const input = document.createElement('input');
+      input.className = 'cell';
+      input.type = 'text';
+      input.inputMode = 'numeric';
+      input.placeholder = '0';
+      input.disabled = !BACKEND_URL;
+      input.dataset.agent = agent;
+      input.dataset.field = field;
+      input.addEventListener('focus', ()=> input.select());
+      input.addEventListener('input', onCellInput);
+      input.addEventListener('keydown', onCellKeydown);
+      input.addEventListener('blur', ()=> saveCell(agent, field));
+      td.appendChild(input);
+      tr.appendChild(td);
+      flatOrder.push(input);
+    });
+
+    ['won','presentations','dead','xDate'].forEach(kind=>{
+      const td = document.createElement('td');
+      td.className = 'calc-cell';
+      const span = document.createElement('span');
+      span.className = 'ratio empty';
+      span.textContent = '—';
+      span.id = 'ratio-' + kind + '-' + agent;
+      td.appendChild(span);
+      tr.appendChild(td);
+    });
+
+    body.appendChild(tr);
+  });
+}
+
+function applyAgentsToInputs(agentsObj, skipFocused){
+  const skip = skipFocused ? focusedKey() : null;
+  flatOrder.forEach(input=>{
+    const agent = input.dataset.agent, field = input.dataset.field;
+    const key = agent + '|' + field;
+    if(skip === key) return;
+    if(pendingSaves[periodOffset + '|' + key]) return; // a save for this exact cell/period is still in flight — don't let a poll clobber it
+    const val = (agentsObj[agent] || {})[field];
+    if(field === 'premiumSold'){
+      input.value = val ? formatMoney(val) : '';
+    } else {
+      input.value = (val === undefined || val === null || val === 0) ? (val === 0 ? '0' : '') : val;
+    }
+  });
+}
+
+function rawNumber(field, agent){
+  const n = parseFloat((currentAgents[agent]||{})[field]);
+  return isNaN(n) ? 0 : n;
+}
+
+function onCellInput(e){
+  const input = e.target;
+  const agent = input.dataset.agent, field = input.dataset.field;
+  let val = input.value;
+  if(field === 'premiumSold'){
+    val = val.replace(/[^0-9.]/g,'');
+  } else {
+    const digits = val.replace(/[^0-9]/g,'');
+    if(digits !== val) input.value = digits;
+    val = digits;
+  }
+  if(!currentAgents[agent]) currentAgents[agent] = {};
+  currentAgents[agent][field] = val;
+  recalcAgent(agent);
+  recalcTotals();
+}
+
+async function onCellKeydown(e){
+  if(e.key !== 'Enter') return;
+  e.preventDefault();
+  const idx = flatOrder.indexOf(e.target);
+  const next = flatOrder[idx+1];
+  if(next){ next.focus(); } else { e.target.blur(); }
+}
+
+let saveQueue = Promise.resolve();
+const pendingSaves = {}; // "offset|agent|field" -> count of in-flight/queued saves for that cell
+
+function saveCell(agent, field){
+  // Capture everything now, synchronously, so later navigation or edits can't
+  // change what this particular save actually sends.
+  const offset = periodOffset;
+  const period = labelForOffset(offset);
+  const value = (currentAgents[agent]||{})[field] || 0;
+  const key = offset + '|' + agent + '|' + field;
+  pendingSaves[key] = (pendingSaves[key] || 0) + 1;
+  saveQueue = saveQueue.then(() => doSaveCell(offset, period, agent, field, value)).finally(() => {
+    pendingSaves[key] -= 1;
+    if(pendingSaves[key] <= 0) delete pendingSaves[key];
+  });
+  return saveQueue;
+}
+
+async function doSaveCell(offset, period, agent, field, value){
+  try{
+    await apiPost({ action:'saveCell', offset, period, agent, field, value });
+    setConn(true, 'Saved ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+  }catch(err){
+    setConn(false, 'Could not save — check connection (' + err.message + ')');
+  }
+}
+
+function setRatio(kind, agent, value, cls){
+  const el = document.getElementById('ratio-' + kind + '-' + agent);
+  if(!el) return;
+  if(value === null){ el.textContent = '—'; el.className = 'ratio empty'; return; }
+  el.textContent = value + '%';
+  el.className = 'ratio ' + cls;
+}
+
+function recalcAgent(agent){
+  const newLeads = rawNumber('newLeads', agent);
+  setRatio('won', agent, pct(rawNumber('won',agent), newLeads), 'won');
+  setRatio('presentations', agent, pct(rawNumber('presentations',agent), newLeads), 'pres');
+  setRatio('dead', agent, pct(rawNumber('dead',agent), newLeads), 'risk');
+  setRatio('xDate', agent, pct(rawNumber('xDate',agent), newLeads), 'risk');
+
+  const premiumInput = document.querySelector(`input[data-agent="${agent}"][data-field="premiumSold"]`);
+  if(premiumInput && document.activeElement !== premiumInput){
+    const raw = (currentAgents[agent]||{}).premiumSold;
+    premiumInput.value = raw ? formatMoney(raw) : '';
+  }
+}
+
+function sumField(agentsObj, field, agent){ return parseFloat((agentsObj[agent]||{})[field]) || 0; }
+
+function recalcTotals(){
+  const totals = {newLeads:0,won:0,policiesSold:0,premiumSold:0,xDate:0,dead:0,presentations:0};
+  AGENTS.forEach(a=> FIELDS.forEach(f=> totals[f]+=sumField(currentAgents,f,a)));
+
+  const row = document.getElementById('totalsRow');
+  const wonPct=pct(totals.won,totals.newLeads), presPct=pct(totals.presentations,totals.newLeads);
+  const deadPct=pct(totals.dead,totals.newLeads), xDatePct=pct(totals.xDate,totals.newLeads);
+  row.innerHTML = `
+    <td class="agent-name">Team total</td>
+    <td>${totals.newLeads}</td><td>${totals.won}</td><td>${totals.policiesSold}</td>
+    <td>$${totals.premiumSold.toLocaleString('en-US',{maximumFractionDigits:0})}</td>
+    <td>${totals.xDate}</td><td>${totals.dead}</td><td>${totals.presentations}</td>
+    <td>${wonPct===null?'—':wonPct+'%'}</td><td>${presPct===null?'—':presPct+'%'}</td>
+    <td>${deadPct===null?'—':deadPct+'%'}</td><td>${xDatePct===null?'—':xDatePct+'%'}</td>`;
+
+  document.getElementById('statStrip').innerHTML = `
+    <div class="stat"><div class="num">${totals.newLeads}</div><div class="lbl">New Leads</div></div>
+    <div class="stat"><div class="num">${totals.won}</div><div class="lbl">Won</div></div>
+    <div class="stat"><div class="num">${totals.policiesSold}</div><div class="lbl">Policies Sold</div></div>
+    <div class="stat"><div class="num">$${totals.premiumSold.toLocaleString('en-US',{maximumFractionDigits:0})}</div><div class="lbl">Premium Sold</div></div>
+    <div class="stat"><div class="num">${totals.presentations}</div><div class="lbl">Presentations</div></div>
+    <div class="stat"><div class="num">${totals.dead}</div><div class="lbl">Dead</div></div>
+    <div class="stat"><div class="num">${totals.xDate}</div><div class="lbl">X-Date</div></div>`;
+}
+
+function renderPeriodDisplay(){
+  document.getElementById('periodDisplay').textContent = labelForOffset(periodOffset);
+  document.getElementById('publishedBanner').style.display = currentPublished ? 'block' : 'none';
+  document.getElementById('publishBtn').textContent = currentPublished
+    ? 'Re-publish (Andrew only)' : 'Publish (Andrew only)';
+}
+
+async function loadCurrentPeriod(skipFocused){
+  if(!BACKEND_URL) return;
+  try{
+    const data = await apiGet('action=getOffset&offset=' + periodOffset);
+    const serverAgents = data.agents || {};
+    // Merge rather than replace: any cell with a save still queued/in-flight keeps
+    // its local value, so a poll landing mid-edit can't overwrite an edit that
+    // hasn't reached the sheet yet (and then get re-saved as stale data).
+    AGENTS.forEach(a=>{
+      if(!currentAgents[a]) currentAgents[a] = {};
+      FIELDS.forEach(f=>{
+        const key = periodOffset + '|' + a + '|' + f;
+        if(pendingSaves[key]) return;
+        currentAgents[a][f] = (serverAgents[a]||{})[f];
+      });
+    });
+    currentPublished = !!data.published;
+    applyAgentsToInputs(currentAgents, skipFocused);
+    AGENTS.forEach(recalcAgent);
+    recalcTotals();
+    renderPeriodDisplay();
+    setConn(true, 'Synced ' + new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'}));
+  }catch(err){
+    setConn(false, 'Could not load — check connection (' + err.message + ')');
+  }
+}
+
+async function loadPublished(){
+  if(!BACKEND_URL) return;
+  try{
+    const data = await apiGet('action=getAllPublished');
+    publishedPeriods = data.periods || [];
+    renderTabs();
+    renderActiveTab();
+  }catch(err){
+    document.getElementById('ytdContainer').innerHTML =
+      `<div class="ytd-empty">Could not load Since June 1 data (${err.message}).</div>`;
+  }
+}
+
+function renderTabs(){
+  const bar = document.getElementById('periodTabs');
+  let html = `<button data-tab="total" class="${activeTab==='total'?'active':''}">All periods</button>`;
+  publishedPeriods.forEach(p=>{
+    html += `<button data-tab="${p.offset}" class="${String(activeTab)===String(p.offset)?'active':''}">${p.period}</button>`;
+  });
+  bar.innerHTML = html;
+  bar.querySelectorAll('button').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      activeTab = btn.dataset.tab === 'total' ? 'total' : parseInt(btn.dataset.tab,10);
+      renderTabs();
+      renderActiveTab();
+    });
+  });
+}
+
+function periodRowsHTML(agentsObj, includePremPerPolicy){
+  let rows = '';
+  const grand = {newLeads:0,won:0,policiesSold:0,premiumSold:0,xDate:0,dead:0,presentations:0};
+  AGENTS.forEach(a=>{
+    const s = {};
+    FIELDS.forEach(f=> s[f] = sumField(agentsObj, f, a));
+    FIELDS.forEach(f=> grand[f]+=s[f]);
+    const wonPct=pct(s.won,s.newLeads), presPct=pct(s.presentations,s.newLeads);
+    const deadPct=pct(s.dead,s.newLeads), xDatePct=pct(s.xDate,s.newLeads);
+    const premPerPolicy = s.policiesSold ? Math.round(s.premiumSold/s.policiesSold) : null;
+    rows += `<tr>
+      <td class="agent-name">${a}</td>
+      <td class="static-val">${s.newLeads}</td>
+      <td class="static-val">${s.won}</td>
+      <td class="static-val">${s.policiesSold}</td>
+      <td class="static-val">$${s.premiumSold.toLocaleString('en-US',{maximumFractionDigits:0})}</td>
+      ${includePremPerPolicy ? `<td class="static-val">${premPerPolicy===null?'—':'$'+premPerPolicy.toLocaleString('en-US')}</td>` : ''}
+      <td class="static-val">${s.presentations}</td>
+      <td class="static-val">${s.xDate}</td>
+      <td class="static-val">${s.dead}</td>
+      <td class="ratio ${wonPct===null?'empty':'won'}">${wonPct===null?'—':wonPct+'%'}</td>
+      <td class="ratio ${presPct===null?'empty':'pres'}">${presPct===null?'—':presPct+'%'}</td>
+      <td class="ratio ${deadPct===null?'empty':'risk'}">${deadPct===null?'—':deadPct+'%'}</td>
+      <td class="ratio ${xDatePct===null?'empty':'risk'}">${xDatePct===null?'—':xDatePct+'%'}</td>
+    </tr>`;
+  });
+  return { rows, grand };
+}
+
+function renderActiveTab(){
+  const container = document.getElementById('ytdContainer');
+  const sub = document.getElementById('ytdSub');
+
+  if(!publishedPeriods.length){
+    sub.textContent = "Browse the running total, or click into any published period to see that exact snapshot.";
+    container.innerHTML = `<div class="ytd-empty">No periods published yet — hit "Publish (Andrew only)" above once a period is complete.</div>`;
+    return;
+  }
+
+  let agentsForTable, premPerPolicy = true, footerLabel;
+  if(activeTab === 'total'){
+    sub.textContent = `Running totals across ${publishedPeriods.length} published period${publishedPeriods.length===1?'':'s'}.`;
+    const merged = {};
+    AGENTS.forEach(a=> merged[a] = {});
+    publishedPeriods.forEach(p=>{
+      AGENTS.forEach(a=>{
+        if(!merged[a]) merged[a] = {};
+        FIELDS.forEach(f=> merged[a][f] = (merged[a][f]||0) + sumField(p.agents, f, a));
+      });
+    });
+    agentsForTable = merged;
+    footerLabel = 'Team, since June 1';
+  } else {
+    const p = publishedPeriods.find(pp => pp.offset === activeTab);
+    sub.textContent = p ? `Snapshot for ${p.period}, as published.` : 'Period not found.';
+    agentsForTable = p ? p.agents : {};
+    footerLabel = 'Team total, this period';
+  }
+
+  const { rows, grand } = periodRowsHTML(agentsForTable, premPerPolicy);
+  const gWonPct=pct(grand.won,grand.newLeads), gPresPct=pct(grand.presentations,grand.newLeads);
+  const gDeadPct=pct(grand.dead,grand.newLeads), gXDatePct=pct(grand.xDate,grand.newLeads);
+  const gPremPerPolicy = grand.policiesSold ? Math.round(grand.premiumSold/grand.policiesSold) : null;
+
+  container.innerHTML = `
+    <div class="table-scroll">
+      <table>
+        <thead><tr>
+          <th class="agent-col">Agent</th>
+          <th class="grp-entry">New Leads</th><th class="grp-entry">Won</th><th class="grp-entry">Policies Sold</th>
+          <th class="grp-entry">Premium Sold</th><th class="grp-entry">Prem / Policy</th>
+          <th class="grp-pres">Presentations</th><th class="grp-entry">X-Date</th><th class="grp-entry">Dead</th>
+          <th class="grp-calc">Leads:Won</th><th class="grp-calc">Leads:Pres.</th>
+          <th class="grp-calc">Leads:Dead</th><th class="grp-calc">Leads:X-Date</th>
+        </tr></thead>
+        <tbody>${rows}</tbody>
+        <tfoot><tr>
+          <td class="agent-name">${footerLabel}</td>
+          <td>${grand.newLeads}</td><td>${grand.won}</td><td>${grand.policiesSold}</td>
+          <td>$${grand.premiumSold.toLocaleString('en-US',{maximumFractionDigits:0})}</td>
+          <td>${gPremPerPolicy===null?'—':'$'+gPremPerPolicy.toLocaleString('en-US')}</td>
+          <td>${grand.presentations}</td><td>${grand.xDate}</td><td>${grand.dead}</td>
+          <td>${gWonPct===null?'—':gWonPct+'%'}</td><td>${gPresPct===null?'—':gPresPct+'%'}</td>
+          <td>${gDeadPct===null?'—':gDeadPct+'%'}</td><td>${gXDatePct===null?'—':gXDatePct+'%'}</td>
+        </tr></tfoot>
+      </table>
+    </div>
+    <p class="ytd-meta">${publishedPeriods.length} period${publishedPeriods.length===1?'':'s'} published so far.</p>`;
+}
+
+// ---------- nav ----------
+function persistOffset(){ localStorage.setItem(NAV_KEY, String(periodOffset)); }
+
+document.getElementById('prevPeriod').addEventListener('click', ()=>{ periodOffset -= 1; persistOffset(); loadCurrentPeriod(false); });
+document.getElementById('nextPeriod').addEventListener('click', ()=>{ periodOffset += 1; persistOffset(); loadCurrentPeriod(false); });
+document.getElementById('jumpToday').addEventListener('click', ()=>{ periodOffset = todaysOffset(); persistOffset(); loadCurrentPeriod(false); });
+document.getElementById('refreshBtn').addEventListener('click', ()=>{ loadCurrentPeriod(true); loadPublished(); });
+document.getElementById('printBtn').addEventListener('click', ()=> window.print());
+
+document.getElementById('publishBtn').addEventListener('click', async ()=>{
+  const label = labelForOffset(periodOffset);
+  const msg = currentPublished
+    ? `"${label}" is already published. Re-publish with the current numbers? This overwrites the existing snapshot for this period.`
+    : `Publish "${label}" to Since June 1? This locks in the current numbers as that period's snapshot.`;
+  if(!confirm(msg)) return;
+  try{
+    await apiPost({ action:'publish', offset:periodOffset, period:label });
+    setConn(true, 'Published ' + label);
+    currentPublished = true;
+    renderPeriodDisplay();
+    await loadPublished();
+  }catch(err){
+    setConn(false, 'Publish failed (' + err.message + ')');
+  }
+});
+
+// ---------- init ----------
+buildGrid();
+renderPeriodDisplay();
+if(BACKEND_URL){
+  loadCurrentPeriod(false);
+  loadPublished();
+} else {
+  setConn(false, 'Not connected — paste your Web App URL above');
+  renderTabs();
+  renderActiveTab();
+}
+
+if(flatOrder[0]) flatOrder[0].focus();
+</script>
+</body>
+</html>
